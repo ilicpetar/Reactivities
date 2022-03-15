@@ -1,18 +1,25 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "semantic-ui-css/semantic.css";
-import 'react-calendar/dist/Calendar.css'
+import "react-calendar/dist/Calendar.css";
+import "react-toastify/dist/ReactToastify.min.css";
 import "./app/layout/styles.css";
 import App from "./app/layout/App";
 import reportWebVitals from "./reportWebVitals";
 import { store, StoreContext } from "./app/stores/store";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Router } from "react-router-dom";
+// import { CustomRouter } from "./features/utils/CustomRouter";
+import { CustomRouterJS } from "./features/utils/CustomRouterJS";
+
+import { createBrowserHistory } from "history";
+
+const history = createBrowserHistory();
 
 ReactDOM.render(
   <StoreContext.Provider value={store}>
-    <BrowserRouter>
+    <CustomRouterJS history={history}>
       <App />
-    </BrowserRouter>
+    </CustomRouterJS>
   </StoreContext.Provider>,
   document.getElementById("root")
 );

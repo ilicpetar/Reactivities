@@ -1,5 +1,7 @@
+using API.Middleware;
 using Aplication.Activities;
 using Aplication.Core;
+using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -8,7 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddFluentValidation(config=>
+{
+    config.RegisterValidatorsFromAssemblyContaining<Create>();
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -38,6 +43,8 @@ using (var scope = app.Services.CreateScope())
     // use context
     await Seed.SeedData(context);
 }
+
+app.UseMiddleware<ExceptionMiddleware>(); 
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

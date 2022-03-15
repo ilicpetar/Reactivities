@@ -1,4 +1,6 @@
-﻿using Domain;
+﻿using Aplication.Core;
+using Domain;
+using FluentValidation;
 using MediatR;
 using Persistence;
 using System;
@@ -11,12 +13,20 @@ namespace Aplication.Activities
 {
     public class Create
     {
-        public class Command : IRequest
+        public class Command : IRequest<Result<Unit>>
         {
             public Activity Activity { get; set; }
         }
 
-        public class Handler : IRequestHandler<Command>
+        public class CommandValidator:AbstractValidator<Command>
+        {
+            public CommandValidator()
+            {
+                    RuleFor(x=>x.Activity).SetValidator(new ActivityValidator());
+            }
+        }
+
+        public class Handler : IRequestHandler<Command,Result<Unit>>
         {
             private readonly DataContext _context;
 
@@ -25,12 +35,15 @@ namespace Aplication.Activities
                 _context = context;
             }
 
-            public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
                 _context.Activities.Add(request.Activity);
-                await _context.SaveChangesAsync();
 
-                return Unit.Value;  
+               var result = await _context.SaveChangesAsync() > 0;
+
+                if (!result) return Result<Unit>.Failure("Faild to create activity");
+
+                return Result<Unit>.Success(Unit.Value);
             }
         }
     }
