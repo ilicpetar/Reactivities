@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using Aplication.Activities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers
 {

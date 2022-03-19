@@ -1,16 +1,29 @@
 using API.Middleware;
+using API.Services;
 using Aplication.Activities;
 using Aplication.Core;
+using Domain;
 using FluentValidation.AspNetCore;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Persistence;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers().AddFluentValidation(config=>
+builder.Services.AddControllers(opt =>
+{
+    var policy=new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    opt.Filters.Add(new AuthorizeFilter(policy));
+})
+    .AddFluentValidation(config=>
 {
     config.RegisterValidatorsFromAssemblyContaining<Create>();
 });
@@ -34,14 +47,41 @@ builder.Services.AddMediatR(typeof(List.Handler).Assembly);
 
 builder.Services.AddAutoMapper(typeof(MappingProfiles).Assembly);
 
+builder.Services.AddIdentityCore<AppUser>(opt =>
+{
+    opt.Password.RequireNonAlphanumeric = false;
+})
+    .AddEntityFrameworkStores<DataContext>()
+    .AddSignInManager<SignInManager<AppUser>>();
+
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("TokenKey")));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(opt =>
+    {
+        opt.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = key,
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddScoped<TokenService>();
+
+//var userManager = builder.Services.AddScoped<UserManager<AppUser>>();
+//var context = builder.Services.AddScoped<DataContext>();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<DataContext>();
-    // use context
-    await Seed.SeedData(context);
+    var userManager=scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        // use context
+    await context.Database.MigrateAsync();
+    await Seed.SeedData(context, userManager);
 }
 
 app.UseMiddleware<ExceptionMiddleware>(); 
@@ -57,6 +97,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("CorsPolicy");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
