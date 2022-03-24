@@ -6,9 +6,14 @@ interface Props extends BrowserRouterProps {
   history: BrowserHistory;
 }
 
-const customHistory = createBrowserHistory();
+// const history = createBrowserHistory();
 
-export const CustomRouter  = ({ basename, history, children }: Props) => {
+export const CustomRouter = ({
+  basename,
+  history,
+  children,
+  ...props
+}: Props) => {
   const [state, setState] = useState({
     action: history.action,
     location: history.location,
@@ -16,7 +21,8 @@ export const CustomRouter  = ({ basename, history, children }: Props) => {
   useLayoutEffect(() => history.listen(setState), [history]);
   return (
     <Router
-      navigator={customHistory}
+      {...props}
+      navigator={history}
       location={state.location}
       navigationType={state.action}
       children={children}

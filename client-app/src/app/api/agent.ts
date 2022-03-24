@@ -3,7 +3,13 @@ import { request } from 'http';
 import { toast } from 'react-toastify';
 import { isPartiallyEmittedExpression } from 'typescript';
 import { Activity } from '../models/activity';
+import { User, UserFormValues } from '../models/user';
 import { store } from '../stores/store';
+import { history } from '../..';
+
+
+
+
 
 const sleep=(delay:number) => {
     return new Promise(resolve=>{
@@ -12,8 +18,13 @@ const sleep=(delay:number) => {
 }
 
 
+axios.defaults.baseURL='https://localhost:5001/api'
 
-axios.defaults.baseURL='http://localhost:5000/api'
+axios.interceptors.request.use( config => {
+    const token=store.commonStore.token;
+    if (token) config.headers!.Authorization=`Bearer ${token}`;
+    return config;
+})
 
 axios.interceptors.response.use(async response =>{
 
@@ -28,7 +39,7 @@ axios.interceptors.response.use(async response =>{
                 toast.error(data);
             }
             if(config.method === 'GET' && data.errors.hasOwnProperty('id')){
-                // history.push('/not-found')
+            history.push('/not-found')
             toast.error('not found');
             }
             if(data.errors){
@@ -47,13 +58,15 @@ axios.interceptors.response.use(async response =>{
             toast.error('unauthorised');
             break;
         case 404:
-            // history.pushState(null,'','/')
-            // history.push('/not-found')
+            //  history.pushState(null,'','/')
+            history.push('/not-found')
+            //  navigator("/")
+                
             toast.error('not found');
             break;
         case 500:
             store.commonStore.setServerError(data);
-            // history.push('/server-error')
+            history.push('/server-error')
             toast.error('server error');
             break;
     }
@@ -76,8 +89,19 @@ const Activities = {
     update: (activity: Activity)=> requests.put<void>(`/activities/${activity.id}`,activity),
     delete: (id: string)=> requests.del<void>(`/activities/${id}`),
 }
+
+const Account = {
+   current: ()=>requests.get<User>('/account'),
+   login:(user: UserFormValues) => requests.post<User>('/account/login',user),
+   register:(user: UserFormValues) => requests.post<User>('/account/register',user),
+}
 const agent = {
-    Activities
+    Activities,
+    Account
 }
 
 export default agent;
+
+function createBrowserHistory() {
+    throw new Error('Function not implemented.');
+}
