@@ -5,6 +5,7 @@ username: string;
 displayName:string;
 image?:string;
 bio?:string;
+photos?:Photo[];
 }
 
 export class Profile implements Profile {
@@ -14,3 +15,9 @@ export class Profile implements Profile {
         this.image=user.image; 
     }
 } 
+
+export interface Photo {
+    id:string;
+    url:string;
+    isMain:boolean;
+}
